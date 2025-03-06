@@ -40,30 +40,3 @@ def send_email(opportunities):
     message["From"] = sender_email
     message["To"] = receiver_email
     message["Subject"] = f"AI Leadership Training - {datetime.date.today()}"
-
-    # Create the email content
-README.md		careerdev.py		requirements.txt
-brinkmann.benjamin@R5541311 career-dev-agent % git push careerdev.py 
-fatal: invalid gitfile format: careerdev.py
-fatal: Could not read from remote repository.
-
-Please make sure you have the correct access rights
-and the repository exists.
-brinkmann.benjamin@R5541311 career-dev-agent % ls
-README.md		careerdev.py		requirements.txt
-brinkmann.benjamin@R5541311 career-dev-agent % more careerdev.py 
-import requests
-import smtplib
-import datetime
-from bs4 import BeautifulSoup
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-
-# Define search sources
-SOURCES = [
-    {"name": "Coursera AI for Medicine", "url": "https://www.coursera.org/specializations/ai-for-medicine"},
-    {"name": "MICCAI Conferences", "url": "https://www.miccai.org"},
-    {"name": "MIT AI Leadership", "url": "https://executive.mit.edu"},
-    {"name": "Stanford AI Healthcare", "url": "https://ai100.stanford.edu"},
-    {"name": "Epilepsy Foundation Research", "url": "https://www.epilepsy.com/research-training"}
-]
