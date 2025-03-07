@@ -1,7 +1,7 @@
 import requests
 import smtplib
-import os
 import datetime
+import os
 from bs4 import BeautifulSoup
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -18,53 +18,55 @@ SOURCES = [
 def scrape_opportunities():
     """Scrape basic data from defined sources."""
     opportunities = []
+    print("🔍 Scraping training opportunities...")
+
     for source in SOURCES:
         try:
+            print(f"📡 Fetching: {source['name']} - {source['url']}")
             response = requests.get(source["url"], timeout=10)
             soup = BeautifulSoup(response.text, 'html.parser')
+
             title = soup.title.string.strip() if soup.title else "No title found"
             link = source["url"]
             cost = "Varies"  # Assume cost varies, could be extracted dynamically
             prerequisites = "Check link for details"
+
             opportunities.append({"title": title, "link": link, "cost": cost, "prerequisites": prerequisites})
         except Exception as e:
-            print(f"Error fetching {source['name']}: {e}")
+            print(f"❌ Error fetching {source['name']}: {e}")
+
+    print(f"✅ Found {len(opportunities)} opportunities.")
     return opportunities
 
 def send_email(opportunities):
     """Send an email with the training opportunities."""
-    sender_email = os.getenv("EMAIL_USER")  # Your email stored in GitHub Secrets
-    password = os.getenv("EMAIL_PASS")      # Your App Password stored in GitHub Secrets
+    sender_email = os.getenv("EMAIL_USER")
     receiver_email = "benbrinkmann@gmail.com"
+    password = os.getenv("EMAIL_PASS")
 
     if not sender_email or not password:
         print("❌ ERROR: Email credentials (EMAIL_USER, EMAIL_PASS) are missing!")
         return
 
-    # Create the email
     message = MIMEMultipart()
     message["From"] = sender_email
     message["To"] = receiver_email
-    message["Subject"] = "AI Leadership Training Opportunities"
+    message["Subject"] = f"AI Leadership Training - {datetime.date.today()}"
 
-    # Create the email body
     body = "Here are the top AI leadership training and career development opportunities:\n\n"
     for opp in opportunities:
-        body += f"**{opp['title']}**\nLink: {opp['link']}\nCost: {opp['cost']}\nPrerequisites: {opp['prerequisites']}\n\n"
+        body += f"📌 **{opp['title']}**\n🔗 Link: {opp['link']}\n💰 Cost: {opp['cost']}\n📖 Prerequisites: {opp['prerequisites']}\n\n"
 
     message.attach(MIMEText(body, "plain"))
 
     try:
-        # Connect to Gmail's SMTP server
+        print("📡 Connecting to email server...")
         server = smtplib.SMTP("smtp.gmail.com", 587)
-        server.starttls()  # Upgrade the connection to secure
-
-        # Login
+        server.starttls()
         print("🔄 Attempting to log in...")
         server.login(sender_email, password)
-        print("✅ Login successful!")
+        print("✅ Login successful! Sending email...")
 
-        # Send email
         server.sendmail(sender_email, receiver_email, message.as_string())
         server.quit()
         print("📩 Email sent successfully!")
@@ -77,3 +79,11 @@ def send_email(opportunities):
         print("❌ ERROR: Recipient email address was refused.")
     except Exception as e:
         print(f"❌ ERROR: {e}")
+
+# Run the script
+if __name__ == "__main__":
+    opportunities = scrape_opportunities()
+    if opportunities:
+        send_email(opportunities)
+    else:
+        print("⚠️ No opportunities found. Email not sent.")
