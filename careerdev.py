@@ -37,7 +37,8 @@ def search_courses():
         return []
     
     soup = BeautifulSoup(response.text, "html.parser")
-    print(f"soup returned {len{soup}}")
+    print(f"soup returned {len(soup)} ")
+
     courses = []
     for result in soup.find_all("li", class_="b_algo")[:5]:
         try:
