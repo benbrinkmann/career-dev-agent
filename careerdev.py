@@ -12,7 +12,7 @@ except ImportError:
     exit()
 
 # Define search parameters
-SEARCH_QUERY = "AI leadership OR medical imaging site:linkedin.com/learning"
+SEARCH_QUERY = "Free training course Artificial Intelligence OR Machine Learning OR Generative"
 SEARCH_ENGINE_URL = "https://www.bing.com/search?q="
 
 # Extract email credentials from environment variables
@@ -21,7 +21,7 @@ EMAIL_PASS = os.getenv("EMAIL_PASS")
 RECEIVER_EMAIL = "benbrinkmann@gmail.com"
 
 def search_courses():
-    """Search LinkedIn Learning and extract top 5 courses."""
+    """Search web and extract top 5 courses."""
     print("🔍 Searching for AI & Medical Imaging training...")
     try:
         response = requests.get(SEARCH_ENGINE_URL + SEARCH_QUERY, timeout=10)
