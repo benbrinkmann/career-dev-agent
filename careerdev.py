@@ -1,46 +1,42 @@
 import os
 import smtplib
 import datetime
+import requests
 from bs4 import BeautifulSoup
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+import openai
 
-try:
-    import requests
-except ImportError:
-    print("❌ ERROR: 'requests' module is not installed. Please install it using 'pip install requests'")
-    exit()
-
-# Define search parameters
-SEARCH_QUERY = "Free training course Artificial Intelligence OR Machine Learning OR Generative"
+# Expanded search parameters
+SEARCH_QUERY = (
+    "(AI leadership OR medical imaging OR AI healthcare OR neurology AI OR machine learning healthcare) "
+    "site:linkedin.com/learning OR site:coursera.org OR site:edx.org OR site:mit.edu OR site:stanford.edu"
+)
 SEARCH_ENGINE_URL = "https://www.bing.com/search?q="
 
-# Extract email credentials from environment variables
+# Extract credentials from environment variables
 EMAIL_USER = os.getenv("EMAIL_USER")
 EMAIL_PASS = os.getenv("EMAIL_PASS")
 RECEIVER_EMAIL = "benbrinkmann@gmail.com"
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+# Set OpenAI key
+openai.api_key = OPENAI_API_KEY
 
 def search_courses():
-    """Search web and extract top 5 courses."""
-    print("🔍 Searching for AI & Medical Imaging training...")
+    """Search expanded sources and collect course data."""
+    print("🔍 Searching for AI & Medical Imaging training opportunities...")
     try:
-        response = requests.get(SEARCH_ENGINE_URL + SEARCH_QUERY, timeout=10)
+        response = requests.get(SEARCH_ENGINE_URL + SEARCH_QUERY, timeout=15)
         response.raise_for_status()
-    except requests.exceptions.ConnectionError:
-        print("❌ ERROR: Network issue - Unable to reach the search engine. Check your internet connection or API restrictions.")
-        return []
-    except requests.exceptions.Timeout:
-        print("❌ ERROR: Request timed out. Try increasing the timeout period.")
-        return []
     except requests.exceptions.RequestException as e:
         print(f"❌ ERROR: Unable to fetch search results - {e}")
         return []
     
     soup = BeautifulSoup(response.text, "html.parser")
-    print(f"soup returned {soup} ")
-
     courses = []
-    for result in soup.find_all("li", class_="b_algo")[:5]:
+
+    for result in soup.find_all("li", class_="b_algo")[:30]:
         try:
             title = result.find("h2").text if result.find("h2") else "No title found"
             link = result.find("a")["href"] if result.find("a") else "No link"
@@ -56,11 +52,43 @@ def search_courses():
             "prerequisites": "Check link for details"
         })
     
-    print(f"✅ Found {len(courses)} courses.")
+    print(f"✅ Collected {len(courses)} raw opportunities.")
     return courses
 
-def send_email(courses):
-    """Send an email with the top training opportunities."""
+def summarize_and_rank(courses):
+    """Use OpenAI to summarize and rank the best opportunities."""
+    print("🤖 Summarizing and ranking opportunities with ChatGPT...")
+    if not OPENAI_API_KEY:
+        print("❌ ERROR: Missing OpenAI API Key!")
+        return []
+
+    prompt = (
+        "You are an expert career advisor. Analyze and rank the following AI leadership and medical imaging course opportunities "
+        "for career advancement. Summarize the top 5, include title, brief summary, cost, format, and why it is valuable.\n\n"
+    )
+
+    for course in courses:
+        prompt += f"Title: {course['title']}\nLink: {course['link']}\nDescription: {course['description']}\n\n"
+    
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": "You summarize AI training opportunities."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=1000,
+            temperature=0.7
+        )
+        summary = response.choices[0].message.content
+        print("✅ Summarization complete.")
+        return summary
+    except Exception as e:
+        print(f"❌ ERROR: Failed to summarize with OpenAI - {e}")
+        return ""
+
+def send_email(summary):
+    """Send an email with the summarized training opportunities."""
     if not EMAIL_USER or not EMAIL_PASS:
         print("❌ ERROR: Missing email credentials!")
         return
@@ -70,9 +98,10 @@ def send_email(courses):
     message["To"] = RECEIVER_EMAIL
     message["Subject"] = f"Top AI Training Opportunities - {datetime.date.today()}"
 
-    body = "Here are the top AI & medical imaging training opportunities from LinkedIn Learning and other sources:\n\n"
-    for course in courses:
-        body += f"📌 **{course['title']}**\n🔗 Link: {course['link']}\n📖 Description: {course['description']}\n💰 Cost: {course['cost']}\n📖 Prerequisites: {course['prerequisites']}\n\n"
+    body = (
+        "Here are the top AI & medical imaging training opportunities from LinkedIn Learning, Coursera, edX, MIT, and Stanford:\n\n"
+        f"{summary}"
+    )
     
     message.attach(MIMEText(body, "plain"))
 
@@ -87,8 +116,12 @@ def send_email(courses):
         print(f"❌ ERROR: {e}")
 
 if __name__ == "__main__":
-    courses = search_courses()
-    if courses:
-        send_email(courses)
+    raw_courses = search_courses()
+    if raw_courses:
+        summary = summarize_and_rank(raw_courses)
+        if summary:
+            send_email(summary)
+        else:
+            print("⚠️ No summary generated.")
     else:
         print("⚠️ No relevant courses found this week.")
