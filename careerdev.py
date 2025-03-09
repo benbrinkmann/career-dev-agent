@@ -26,8 +26,13 @@ openai.api_key = OPENAI_API_KEY
 def search_courses():
     """Search expanded sources and collect course data."""
     print("🔍 Searching for AI & Medical Imaging training opportunities...")
+
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.133 Safari/537.36"
+    }
+
     try:
-        response = requests.get(SEARCH_ENGINE_URL + SEARCH_QUERY, timeout=15)
+        response = requests.get(SEARCH_ENGINE_URL + SEARCH_QUERY, headers=headers, timeout=15)
         response.raise_for_status()
     except requests.exceptions.RequestException as e:
         print(f"❌ ERROR: Unable to fetch search results - {e}")
