@@ -18,7 +18,7 @@ jobs:
           python-version: '3.9'
 
       - name: Install dependencies
-        run: pip install beautifulsoup4 requests
+        run: pip install beautifulsoup4 requests openai
         
       - name: Run script
         env:
