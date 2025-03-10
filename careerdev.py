@@ -65,7 +65,7 @@ def summarize_and_rank(courses):
     print("🤖 Summarizing and ranking opportunities with ChatGPT...")
     if not OPENAI_API_KEY:
         print("❌ ERROR: Missing OpenAI API Key!")
-        return ""
+        return fallback_summary(courses)
 
     prompt = (
         "You are an expert career advisor. Analyze and rank the following AI leadership and medical imaging course opportunities "
@@ -90,7 +90,21 @@ def summarize_and_rank(courses):
         return summary
     except Exception as e:
         print(f"❌ ERROR: Failed to summarize with OpenAI - {e}")
-        return ""
+        print("⚠️ Sending raw course data instead...")
+        return fallback_summary(courses)
+
+def fallback_summary(courses):
+    """Provide a fallback raw course summary."""
+    fallback = "⚠️ Unable to summarize. Here are the raw course opportunities:\n\n"
+    for course in courses[:5]:  # limit to top 5
+        fallback += (
+            f"Title: {course['title']}\n"
+            f"Link: {course['link']}\n"
+            f"Description: {course['description']}\n"
+            f"Cost: {course['cost']}\n"
+            f"Prerequisites: {course['prerequisites']}\n\n"
+        )
+    return fallback
 
 def send_email(summary):
     """Send an email with the summarized training opportunities."""
