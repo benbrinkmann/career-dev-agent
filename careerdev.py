@@ -77,7 +77,7 @@ def summarize_and_rank(courses):
     
     try:
         response = openai.chat.completions.create(
-            model="gpt-4",
+            model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": "You summarize AI training opportunities."},
                 {"role": "user", "content": prompt}
