@@ -65,7 +65,7 @@ def summarize_and_rank(courses):
     print("🤖 Summarizing and ranking opportunities with ChatGPT...")
     if not OPENAI_API_KEY:
         print("❌ ERROR: Missing OpenAI API Key!")
-        return []
+        return ""
 
     prompt = (
         "You are an expert career advisor. Analyze and rank the following AI leadership and medical imaging course opportunities "
@@ -76,7 +76,7 @@ def summarize_and_rank(courses):
         prompt += f"Title: {course['title']}\nLink: {course['link']}\nDescription: {course['description']}\n\n"
     
     try:
-        response = openai.ChatCompletion.create(
+        response = openai.chat.completions.create(
             model="gpt-4",
             messages=[
                 {"role": "system", "content": "You summarize AI training opportunities."},
@@ -85,7 +85,7 @@ def summarize_and_rank(courses):
             max_tokens=1000,
             temperature=0.7
         )
-        summary = response.choices[0].message.content
+        summary = response.choices[0].message['content']
         print("✅ Summarization complete.")
         return summary
     except Exception as e:
