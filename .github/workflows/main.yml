@@ -26,3 +26,4 @@ jobs:
           EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: python careerdev.py
+             python neurotech.py
