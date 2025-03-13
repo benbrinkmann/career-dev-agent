@@ -13,9 +13,16 @@ RECEIVER_EMAIL = "benbrinkmann@gmail.com"
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 SERPAPI_API_KEY = os.getenv("SERPAPI_API_KEY")
 
-# Debug: confirm keys are loaded
-print(f"🔑 OPENAI_API_KEY loaded: {bool(OPENAI_API_KEY)}")
-print(f"🔑 SERPAPI_API_KEY loaded: {SERPAPI_API_KEY[:5]}... (length: {len(SERPAPI_API_KEY) if SERPAPI_API_KEY else 0})")
+# Debug: confirm keys are loaded and handle missing values safely
+if OPENAI_API_KEY:
+    print("🔑 OPENAI_API_KEY loaded: True")
+else:
+    print("❌ ERROR: OPENAI_API_KEY is missing!")
+
+if SERPAPI_API_KEY:
+    print(f"🔑 SERPAPI_API_KEY loaded: {SERPAPI_API_KEY[:5]}... (length: {len(SERPAPI_API_KEY)})")
+else:
+    print("❌ ERROR: SERPAPI_API_KEY is missing!")
 
 # Set OpenAI key
 openai.api_key = OPENAI_API_KEY
