@@ -13,11 +13,21 @@ RECEIVER_EMAIL = "benbrinkmann@gmail.com"
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 SERPAPI_API_KEY = os.getenv("SERPAPI_API_KEY")
 
+# Debug: confirm keys are loaded
+print(f"🔑 OPENAI_API_KEY loaded: {bool(OPENAI_API_KEY)}")
+print(f"🔑 SERPAPI_API_KEY loaded: {SERPAPI_API_KEY[:5]}... (length: {len(SERPAPI_API_KEY) if SERPAPI_API_KEY else 0})")
+
 # Set OpenAI key
 openai.api_key = OPENAI_API_KEY
 
 def search_ai_training_opportunities():
     print("🔍 Searching for AI Training Opportunities via SerpAPI...")
+
+    if not SERPAPI_API_KEY:
+        error_msg = "❌ ERROR: Missing SERPAPI API Key!"
+        print(error_msg)
+        send_error_email(error_msg)
+        return []
 
     params = {
         "engine": "google",
@@ -32,7 +42,9 @@ def search_ai_training_opportunities():
         response.raise_for_status()
         data = response.json()
     except requests.exceptions.RequestException as e:
-        print(f"❌ ERROR: Failed to fetch results from SerpAPI - {e}")
+        error_msg = f"❌ ERROR: Failed to fetch results from SerpAPI - {e}"
+        print(error_msg)
+        send_error_email(error_msg)
         return []
 
     opportunities = []
@@ -51,7 +63,9 @@ def summarize_and_rank(opportunities):
     print("🤖 Summarizing and ranking training opportunities with ChatGPT...")
 
     if not OPENAI_API_KEY:
-        print("❌ ERROR: Missing OpenAI API Key!")
+        error_msg = "❌ ERROR: Missing OpenAI API Key!"
+        print(error_msg)
+        send_error_email(error_msg)
         return fallback_summary(opportunities)
 
     prompt = (
@@ -76,7 +90,9 @@ def summarize_and_rank(opportunities):
         print("✅ Summarization complete.")
         return summary
     except Exception as e:
-        print(f"❌ ERROR: Failed to summarize with OpenAI - {e}")
+        error_msg = f"❌ ERROR: Failed to summarize with OpenAI - {e}"
+        print(error_msg)
+        send_error_email(error_msg)
         return fallback_summary(opportunities)
 
 def fallback_summary(opportunities):
@@ -91,7 +107,9 @@ def fallback_summary(opportunities):
 
 def send_email(summary):
     if not EMAIL_USER or not EMAIL_PASS:
-        print("❌ ERROR: Missing email credentials!")
+        error_msg = "❌ ERROR: Missing email credentials!"
+        print(error_msg)
+        send_error_email(error_msg)
         return
 
     message = MIMEMultipart()
@@ -114,7 +132,33 @@ def send_email(summary):
         server.quit()
         print("📩 Email sent successfully!")
     except Exception as e:
-        print(f"❌ ERROR: {e}")
+        error_msg = f"❌ ERROR: {e}"
+        print(error_msg)
+        send_error_email(error_msg)
+
+def send_error_email(error_message):
+    if not EMAIL_USER or not EMAIL_PASS:
+        print("❌ ERROR: Missing email credentials for sending error notification!")
+        return
+
+    message = MIMEMultipart()
+    message["From"] = EMAIL_USER
+    message["To"] = RECEIVER_EMAIL
+    message["Subject"] = f"AI Training Agent - Error Notification - {datetime.date.today()}"
+
+    body = f"An error occurred during the execution of the AI Training Agent:\n\n{error_message}"
+
+    message.attach(MIMEText(body, "plain"))
+
+    try:
+        print("📡 Connecting to email server to send error message...")
+        server = smtplib.SMTP_SSL("smtp.gmail.com", 465)
+        server.login(EMAIL_USER, EMAIL_PASS)
+        server.sendmail(EMAIL_USER, RECEIVER_EMAIL, message.as_string())
+        server.quit()
+        print("📩 Error email sent successfully!")
+    except Exception as e:
+        print(f"❌ ERROR: Failed to send error email - {e}")
 
 if __name__ == "__main__":
     opportunities = search_ai_training_opportunities()
@@ -123,6 +167,10 @@ if __name__ == "__main__":
         if summary:
             send_email(summary)
         else:
-            print("⚠️ No summary generated.")
+            msg = "⚠️ No summary generated."
+            print(msg)
+            send_error_email(msg)
     else:
-        print("⚠️ No opportunities found.")
+        msg = "⚠️ No opportunities found."
+        print(msg)
+        send_error_email(msg)
